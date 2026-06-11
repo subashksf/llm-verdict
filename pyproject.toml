@@ -1,0 +1,42 @@
+[project]
+name = "llm-verdict"
+version = "0.1.0"
+description = "Provider-agnostic LLM evaluation harness"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "duckdb>=0.9",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+verdict = "llm_verdict.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C901", "I"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["llm_verdict.core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "mypy>=1.0",
+    "ruff>=0.4",
+]

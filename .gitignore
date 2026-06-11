@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Project-specific: private data
+suites/*/
+!suites/_examples/
+runs/
+reports/
+*.duckdb
+*.duckdb.wal
+
+# OS
+.DS_Store

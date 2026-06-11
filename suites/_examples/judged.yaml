@@ -1,0 +1,22 @@
+task_id: "examples/judged-001"
+category: "writing"
+prompt: "Write a concise explanation of why the sky is blue, suitable for a 10-year-old."
+task_type: "judged"
+grader:
+  name: "llm_judge"
+  params:
+    rubric_id: "explanation_quality"
+    criteria:
+      - name: "accuracy"
+        description: "Scientifically correct explanation"
+        weight: 0.4
+      - name: "clarity"
+        description: "Understandable by target audience"
+        weight: 0.4
+      - name: "conciseness"
+        description: "Appropriate length without unnecessary detail"
+        weight: 0.2
+metadata:
+  difficulty: "medium"
+  source: "synthetic"
+version: 1

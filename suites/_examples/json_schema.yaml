@@ -1,0 +1,21 @@
+task_id: "examples/json-schema-001"
+category: "structured_output"
+prompt: "Return a JSON object with fields: name (string), age (integer), active (boolean)."
+task_type: "json_schema"
+grader:
+  name: "json_schema"
+  params:
+    schema:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+        age:
+          type: "integer"
+        active:
+          type: "boolean"
+      required: ["name", "age", "active"]
+metadata:
+  difficulty: "easy"
+  source: "synthetic"
+version: 1

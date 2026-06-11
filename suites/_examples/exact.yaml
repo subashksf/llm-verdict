@@ -1,0 +1,13 @@
+task_id: "examples/exact-001"
+category: "general"
+prompt: "What is the capital of France?"
+task_type: "exact"
+grader:
+  name: "exact_match"
+  params:
+    expected: "Paris"
+    case_sensitive: false
+metadata:
+  difficulty: "easy"
+  source: "synthetic"
+version: 1

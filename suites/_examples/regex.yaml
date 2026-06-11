@@ -1,0 +1,13 @@
+task_id: "examples/regex-001"
+category: "general"
+prompt: "Give me a valid email address."
+task_type: "regex"
+grader:
+  name: "regex"
+  params:
+    pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    should_match: true
+metadata:
+  difficulty: "easy"
+  source: "synthetic"
+version: 1

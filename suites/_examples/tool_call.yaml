@@ -1,0 +1,21 @@
+task_id: "examples/tool-call-001"
+category: "tool_use"
+prompt:
+  - role: "system"
+    content: "You have access to a calculator tool. Use it to answer math questions."
+  - role: "user"
+    content: "What is 42 * 17?"
+task_type: "tool_call"
+grader:
+  name: "tool_call"
+  params:
+    expected_tool: "calculator"
+    expected_args:
+      operation: "multiply"
+      a: 42
+      b: 17
+    match_mode: "subset"
+metadata:
+  difficulty: "easy"
+  source: "synthetic"
+version: 1

@@ -1,0 +1,17 @@
+task_id: "examples/code-exec-001"
+category: "code"
+prompt: "Write a Python function called `add` that takes two integers and returns their sum."
+task_type: "code_exec"
+grader:
+  name: "code_exec"
+  params:
+    test_code: |
+      def test_add():
+          assert add(2, 3) == 5
+          assert add(-1, 1) == 0
+          assert add(0, 0) == 0
+    timeout_seconds: 30
+metadata:
+  difficulty: "easy"
+  source: "synthetic"
+version: 1
