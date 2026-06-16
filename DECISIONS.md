@@ -22,3 +22,42 @@ The spec (§5) lists `regex` as a grader but the Task model (§4) enum lists `ex
 
 ### No deviations from spec
 Phase 1 implementation follows the spec faithfully. All acceptance criteria pass.
+
+## Phase 2 Decisions
+
+### `status` column added to `runs` table
+The spec says runs are immutable, but a run needs lifecycle tracking (running → completed/partial). Added a `status VARCHAR NOT NULL DEFAULT 'completed'` column to the `runs` table. `update_run_status()` is the sole mutation and only changes lifecycle state, never results data. This preserves the append-only invariant on trials/scores.
+
+### Response cache uses a separate DuckDB file
+Cache is stored in `.verdict_cache.duckdb` (configurable). Separate from the main results store so cache can be wiped without affecting run history. Keyed by composite SHA-256 of `(model_id, model_version, params_hash, prompt_hash)`.
+
+### Cache hits populate cost/latency from the cached record
+Per CLAUDE.md: "cache hits still need cost/latency fields populated (copy from cached record, flag `cached=true`)." The engine copies all fields from the cache entry and sets `cached=True` on the resulting TrialResult.
+
+### Budget enforcement is two-tier
+1. Pre-run cost estimation (tasks × trials × estimated tokens × price) — hard abort before any API call if estimate exceeds budget.
+2. In-run tracking with `asyncio.Lock` — after each response, atomically check-and-deduct. If spent >= budget, mark `budget_exceeded=True`, cancel remaining work, persist what completed, set run status to `partial`.
+
+### Concurrency uses anyio semaphore with anyio task group
+Using `anyio.Semaphore` and `anyio.create_task_group()` for concurrency control. This is portable between asyncio and trio, and the semaphore count comes from the model config's `max_concurrency` field.
+
+### Exponential backoff with jitter
+Retry on any exception from `client.complete()` (in production this catches 429/5xx from litellm). Formula: `base_ms * 2^attempt + random(0, base_ms)` where base_ms=1000, max 5 retries.
+
+### Grader errors don't abort the run
+Per §6: "a single task failure (grader exception, sandbox crash) is recorded with `flags=["grader_error"]` and never aborts the run." The engine catches all exceptions in `_grade_trial` and records a Score with `grader_version="error"` and `flags=["grader_error"]`.
+
+### Run IDs use ULID
+ULIDs are time-sortable and globally unique, matching the spec's `run_id: str # ULID` field. Using `python-ulid` package.
+
+### Pre-run estimate uses conservative token assumptions
+Input tokens estimated at 500 per call (conservative for typical prompts). Output tokens estimated at the model's `default_max_tokens`. This errs on the side of rejecting expensive runs.
+
+### `verdict run --resume` loads original manifest from DB
+Resume queries the `runs` table for the original manifest, then diffs completed trials against the expected full set. Only the delta is executed under the same run_id.
+
+### No deviations from spec
+Phase 2 implementation follows the spec faithfully. All acceptance criteria pass:
+- Full run against mock client produces manifest, trials, and scores in DuckDB.
+- Budget abort works (both pre-run estimate and in-run hard stop).
+- Resume completes a partial run under the original manifest.

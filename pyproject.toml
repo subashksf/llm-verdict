@@ -8,6 +8,10 @@ dependencies = [
     "typer>=0.9",
     "duckdb>=0.9",
     "pyyaml>=6.0",
+    "litellm>=1.40",
+    "jsonschema>=4.20",
+    "anyio>=4.0",
+    "python-ulid>=2.0",
 ]
 
 [project.scripts]
@@ -33,10 +37,12 @@ packages = ["llm_verdict.core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [dependency-groups]
 dev = [
     "pytest>=7.0",
+    "pytest-asyncio>=0.23",
     "mypy>=1.0",
     "ruff>=0.4",
 ]

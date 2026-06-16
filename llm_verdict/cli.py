@@ -1,5 +1,8 @@
 """CLI entry point for llm-verdict."""
 
+from __future__ import annotations
+
+import asyncio
 from pathlib import Path
 
 import typer
@@ -8,7 +11,6 @@ from llm_verdict.tasks.loader import SuiteLoadError, load_suite
 
 app = typer.Typer(name="verdict", no_args_is_help=True)
 suite_app = typer.Typer(name="suite", no_args_is_help=True)
-run_app = typer.Typer(name="run", no_args_is_help=True, invoke_without_command=True)
 report_app = typer.Typer(name="report", no_args_is_help=True)
 judge_app = typer.Typer(name="judge", no_args_is_help=True)
 db_app = typer.Typer(name="db", no_args_is_help=True)
@@ -21,7 +23,7 @@ app.add_typer(db_app, name="db")
 app.add_typer(task_app, name="task")
 
 
-# --- suite commands (validate and hash are working) ---
+# --- suite commands ---
 
 
 @suite_app.command("validate")
@@ -47,7 +49,7 @@ def suite_hash(path: Path) -> None:
     typer.echo(suite.suite_hash)
 
 
-# --- run commands (stubs) ---
+# --- run command ---
 
 
 @app.command("run")
@@ -63,11 +65,59 @@ def run_cmd(
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable response cache"),
 ) -> None:
     """Execute an evaluation run."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    from llm_verdict.providers.registry import create_client
+    from llm_verdict.runner.cache import ResponseCache
+    from llm_verdict.runner.engine import BudgetExceededError, Engine, RunConfig
+    from llm_verdict.store.duck import init_db
+
+    try:
+        task_suite = load_suite(suite)
+    except SuiteLoadError as e:
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        client = create_client(model)
+    except FileNotFoundError as e:
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(code=1)
+    db_path = Path("verdict.duckdb")
+    db_conn = init_db(db_path)
+
+    cache = None
+    if not no_cache:
+        cache = ResponseCache(Path(".verdict_cache.duckdb"))
+
+    config = RunConfig(
+        model_name=model,
+        suite=task_suite,
+        trials_per_task=trials,
+        budget_usd=budget,
+        temperature=0.0,
+        no_cache=no_cache,
+        resume_run_id=resume or None,
+    )
+
+    if dry_run:
+        engine = Engine(client=client, db_conn=db_conn, cache=cache)
+        est = engine._estimate_cost(task_suite.tasks, trials)
+        typer.echo(f"Tasks: {len(task_suite.tasks)}")
+        typer.echo(f"Total trials: {len(task_suite.tasks) * trials}")
+        typer.echo(f"Estimated cost: ${est:.4f}")
+        typer.echo(f"Budget: ${budget:.2f}")
+        typer.echo(f"Suite hash: {task_suite.suite_hash}")
+        return
+
+    engine = Engine(client=client, db_conn=db_conn, cache=cache)
+    try:
+        manifest = asyncio.run(engine.execute_run(config))
+        typer.echo(f"Run complete: {manifest.run_id}")
+    except BudgetExceededError as e:
+        typer.echo(f"Budget exceeded: {e}", err=True)
+        raise typer.Exit(code=1)
 
 
-# --- grade commands (stubs) ---
+# --- grade command ---
 
 
 @app.command("grade")

@@ -29,12 +29,12 @@ def test_suite_validate_bad_path() -> None:
     assert "ERROR" in result.output
 
 
-def test_run_stub() -> None:
-    """verdict run prints not implemented."""
+def test_run_missing_model_errors() -> None:
+    """verdict run with unknown model config errors."""
     result = runner.invoke(
-        app, ["run", "--model", "test", "--suite", "suites/_examples"]
+        app, ["run", "--model", "nonexistent", "--suite", "suites/_examples"]
     )
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
 
 
 def test_grade_stub() -> None:
