@@ -20,9 +20,7 @@ class LiteLLMClient:
         self._api_key_env: str = config["api_key_env"]
         self._pricing_in: float = config["pricing"]["input_per_mtok_usd"]
         self._pricing_out: float = config["pricing"]["output_per_mtok_usd"]
-        self._max_concurrency: int = config.get("limits", {}).get(
-            "max_concurrency", 4
-        )
+        self._max_concurrency: int = config.get("limits", {}).get("max_concurrency", 4)
         self._default_max_tokens: int = config.get("defaults", {}).get(
             "max_tokens", 4096
         )

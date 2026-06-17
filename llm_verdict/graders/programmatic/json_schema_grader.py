@@ -28,26 +28,20 @@ class JsonSchemaGrader:
         try:
             data = json.loads(response_text)
         except json.JSONDecodeError:
-            return GradeResult(
-                passed=False, score=0.0, flags=["format_violation"]
-            )
+            return GradeResult(passed=False, score=0.0, flags=["format_violation"])
 
         if not partial_credit:
             return self._binary_validate(data, schema)
         return self._partial_validate(data, schema)
 
-    def _binary_validate(
-        self, data: Any, schema: dict[str, Any]
-    ) -> GradeResult:
+    def _binary_validate(self, data: Any, schema: dict[str, Any]) -> GradeResult:
         try:
             jsonschema.validate(data, schema)
             return GradeResult(passed=True, score=1.0)
         except jsonschema.ValidationError:
             return GradeResult(passed=False, score=0.0)
 
-    def _partial_validate(
-        self, data: Any, schema: dict[str, Any]
-    ) -> GradeResult:
+    def _partial_validate(self, data: Any, schema: dict[str, Any]) -> GradeResult:
         required = schema.get("required", [])
         properties = schema.get("properties", {})
         if not required:

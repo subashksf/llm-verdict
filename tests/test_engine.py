@@ -202,12 +202,8 @@ async def test_resume_completes_partial_run(tmp_path: Path) -> None:
     run_id = manifest.run_id
 
     # Simulate partial: delete some trials to pretend they never ran
-    db_conn.execute(
-        "DELETE FROM trials WHERE run_id = ? AND trial_index = 2", [run_id]
-    )
-    db_conn.execute(
-        "DELETE FROM scores WHERE run_id = ? AND trial_index = 2", [run_id]
-    )
+    db_conn.execute("DELETE FROM trials WHERE run_id = ? AND trial_index = 2", [run_id])
+    db_conn.execute("DELETE FROM scores WHERE run_id = ? AND trial_index = 2", [run_id])
     update_status_sql = "UPDATE runs SET status = 'partial' WHERE run_id = ?"
     db_conn.execute(update_status_sql, [run_id])
 

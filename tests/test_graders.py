@@ -11,8 +11,16 @@ from llm_verdict.graders.registry import get_grader
 # --- Registry ---
 
 
-def test_registry_returns_all_four_graders() -> None:
-    for name in ("exact_match", "regex", "json_schema", "tool_call"):
+def test_registry_returns_all_graders() -> None:
+    names = (
+        "exact_match",
+        "regex",
+        "json_schema",
+        "tool_call",
+        "code_exec",
+        "llm_judge",
+    )
+    for name in names:
         grader = get_grader(name)
         assert grader.name == name
 

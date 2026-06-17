@@ -134,14 +134,80 @@ def grade_cmd(
 # --- judge commands (stubs) ---
 
 
+def _prompt_for_label() -> str:
+    """Prompt user until they enter a valid label (y/n/s)."""
+    while True:
+        answer = typer.prompt("Your verdict (y/n/s)")
+        if answer.lower() in ("y", "n", "s"):
+            return answer.lower()
+        typer.echo("Please enter y, n, or s")
+
+
+def _collect_annotations(
+    samples: list[dict], run: str, annotator: str, db_conn: object
+) -> int:
+    """Present samples interactively and collect annotations."""
+    from llm_verdict.graders.judge.calibration import insert_annotation
+
+    labeled = 0
+    for i, s in enumerate(samples, 1):
+        typer.echo(f"--- [{i}/{len(samples)}] Task: {s['task_id']} ---")
+        preview = s["response_text"][:300]
+        typer.echo(f"Response: {preview}")
+        judge_label = "PASS" if s["judge_passed"] else "FAIL"
+        typer.echo(f"Judge said: {judge_label}")
+
+        answer = _prompt_for_label()
+        if answer == "s":
+            continue
+
+        insert_annotation(
+            db_conn, run, s["task_id"], s["trial_index"], annotator, answer == "y"
+        )
+        labeled += 1
+    return labeled
+
+
 @judge_app.command("calibrate")
 def judge_calibrate(
     run: str = typer.Option(..., help="Run ID to calibrate against"),
     sample: int = typer.Option(30, help="Number of items to sample"),
+    annotator: str = typer.Option("human", help="Annotator name"),
 ) -> None:
     """Calibrate the LLM judge against human annotations."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    from llm_verdict.graders.judge.calibration import (
+        compute_calibration,
+        get_calibration_samples,
+    )
+    from llm_verdict.store.duck import init_db
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found. Run an evaluation first.", err=True)
+        raise typer.Exit(code=1)
+
+    db_conn = init_db(db_path)
+    samples = get_calibration_samples(db_conn, run, sample)
+
+    if not samples:
+        typer.echo("ERROR: No scored trials found for this run.", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Calibrating {len(samples)} samples from run {run}")
+    typer.echo("For each response, enter: y=pass, n=fail, s=skip\n")
+
+    labeled = _collect_annotations(samples, run, annotator, db_conn)
+    typer.echo(f"\nLabeled {labeled} samples.")
+
+    result = compute_calibration(db_conn, run)
+    if result is None:
+        typer.echo("Not enough data to compute kappa.")
+        return
+
+    typer.echo(f"Cohen's kappa: {result.kappa:.3f}")
+    typer.echo(f"Agreement rate: {result.agreement_rate:.1%}")
+    if result.kappa < 0.6:
+        typer.echo("WARNING: Kappa below 0.6 — judge may not be reliable")
 
 
 # --- report commands (stubs) ---

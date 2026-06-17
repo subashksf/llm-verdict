@@ -186,9 +186,7 @@ def get_completed_trials(
     return {(row[0], row[1]) for row in rows}
 
 
-def get_run(
-    conn: duckdb.DuckDBPyConnection, run_id: str
-) -> dict[str, Any] | None:
+def get_run(conn: duckdb.DuckDBPyConnection, run_id: str) -> dict[str, Any] | None:
     """Load a run record as a dict, or None if not found."""
     row = conn.execute(
         "SELECT run_id, created_at, model_id, model_provider, model_version, "

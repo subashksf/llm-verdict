@@ -61,3 +61,17 @@ Phase 2 implementation follows the spec faithfully. All acceptance criteria pass
 - Full run against mock client produces manifest, trials, and scores in DuckDB.
 - Budget abort works (both pre-run estimate and in-run hard stop).
 - Resume completes a partial run under the original manifest.
+
+## Phase 3 Decisions
+
+### Sandbox uses Docker containers
+macOS lacks network namespaces for subprocess isolation. Rather than a best-effort approach (no DNS, temp dir, short timeout), we use Docker containers for airtight network isolation. This adds Docker as a runtime dependency for `code_exec` tasks.
+
+### Judge model is user-configured, no default
+The spec requires the judge ≠ model under test, but doesn't specify a default. Rather than hardcoding one, users must provide a judge config in `configs/judges/`. This is highlighted in the README. Rationale: explicit configuration over magic defaults; judge choice has cost/quality implications the user should own.
+
+### Calibration uses interactive CLI prompts
+`verdict judge calibrate` presents samples one at a time with y/n/skip prompts. This is more natural for the expected workflow (quick labeling sessions) vs. generating a batch file to fill in.
+
+### JSON repair attempted with format_violation flag
+When the judge returns slightly malformed JSON (trailing commas, markdown fences), attempt repair before failing. If repair succeeds, set `flags=["format_violation"]` on the score so downstream analysis can filter or flag these. If repair fails, score the trial as a grader error.

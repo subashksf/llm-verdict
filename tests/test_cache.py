@@ -70,12 +70,16 @@ def test_cache_key_determinism() -> None:
 
 def test_different_keys_produce_different_composites() -> None:
     key1 = CacheKey(
-        model_id="model-a", model_version="v1",
-        params_hash="p1", prompt_hash="h1",
+        model_id="model-a",
+        model_version="v1",
+        params_hash="p1",
+        prompt_hash="h1",
     )
     key2 = CacheKey(
-        model_id="model-b", model_version="v1",
-        params_hash="p1", prompt_hash="h1",
+        model_id="model-b",
+        model_version="v1",
+        params_hash="p1",
+        prompt_hash="h1",
     )
     assert key1.composite() != key2.composite()
 

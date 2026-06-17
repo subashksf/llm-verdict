@@ -1,0 +1,15 @@
+# Example judge config — copy and modify for your use case.
+# The judge model MUST differ from the model under test.
+judge_model: "anthropic/claude-sonnet-4-6"
+temperature: 0.0
+max_tokens: 2048
+criteria:
+  - name: "accuracy"
+    description: "Response is factually correct and complete"
+    weight: 0.4
+  - name: "clarity"
+    description: "Response is clear, well-structured, and easy to follow"
+    weight: 0.3
+  - name: "relevance"
+    description: "Response directly addresses what was asked"
+    weight: 0.3

@@ -16,13 +16,13 @@ def register(grader_cls: type) -> type:
 def get_grader(name: str) -> Grader:
     """Look up and instantiate a grader by name."""
     if name not in _REGISTRY:
-        raise KeyError(
-            f"Unknown grader: {name!r}. Available: {list(_REGISTRY.keys())}"
-        )
+        raise KeyError(f"Unknown grader: {name!r}. Available: {list(_REGISTRY.keys())}")
     return _REGISTRY[name]()
 
 
 def _register_builtins() -> None:
+    from llm_verdict.graders.judge.grader import LLMJudgeGrader
+    from llm_verdict.graders.programmatic.code_exec_grader import CodeExecGrader
     from llm_verdict.graders.programmatic.exact_match import ExactMatchGrader
     from llm_verdict.graders.programmatic.json_schema_grader import (
         JsonSchemaGrader,
@@ -36,6 +36,8 @@ def _register_builtins() -> None:
     register(RegexGrader)
     register(JsonSchemaGrader)
     register(ToolCallGrader)
+    register(CodeExecGrader)
+    register(LLMJudgeGrader)
 
 
 _register_builtins()

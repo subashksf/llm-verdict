@@ -62,9 +62,7 @@ def _args_match(
     if mode == "exact":
         return actual == expected
     if mode == "subset":
-        return all(
-            k in actual and actual[k] == expected[k] for k in expected
-        )
+        return all(k in actual and actual[k] == expected[k] for k in expected)
     if mode == "semantic_key":
         return all(k in actual for k in expected)
     return actual == expected

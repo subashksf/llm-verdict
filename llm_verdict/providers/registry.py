@@ -23,9 +23,7 @@ def load_model_config(name: str, configs_dir: Path | None = None) -> dict[str, A
         return yaml.safe_load(f)
 
 
-def create_client(
-    name: str, configs_dir: Path | None = None
-) -> ModelClient:
+def create_client(name: str, configs_dir: Path | None = None) -> ModelClient:
     """Create a ModelClient from a named config."""
     config = load_model_config(name, configs_dir)
     return LiteLLMClient(config)

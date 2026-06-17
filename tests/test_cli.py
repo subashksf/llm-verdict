@@ -43,10 +43,11 @@ def test_grade_stub() -> None:
     assert "not implemented" in result.output
 
 
-def test_judge_calibrate_stub() -> None:
-    """verdict judge calibrate prints not implemented."""
+def test_judge_calibrate_no_db() -> None:
+    """verdict judge calibrate errors when no database exists."""
     result = runner.invoke(app, ["judge", "calibrate", "--run", "some-run-id"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
+    assert "No database found" in result.output
 
 
 def test_report_card_stub() -> None:
