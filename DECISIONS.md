@@ -75,3 +75,29 @@ The spec requires the judge ≠ model under test, but doesn't specify a default.
 
 ### JSON repair attempted with format_violation flag
 When the judge returns slightly malformed JSON (trailing commas, markdown fences), attempt repair before failing. If repair succeeds, set `flags=["format_violation"]` on the score so downstream analysis can filter or flag these. If repair fails, score the trial as a grader error.
+
+## Phase 4 Decisions
+
+### INSUFFICIENT_DATA checked after ADOPT conditions
+The spec says INSUFFICIENT_DATA fires when "CIs are too wide to decide." If adopt conditions are already met (e.g., lower CI bound clears threshold despite wide CI), the data is sufficient. Order: REJECT (constraints) → ADOPT → INSUFFICIENT_DATA → HOLD.
+
+### Verdict clause evaluation uses dispatch table
+Each clause type (`pass_rate_delta_pp`, `ci_overlap`, `cost_per_success_reduction_pct`, `pass_rate_within_ci`) has its own evaluator function in `_CLAUSE_EVALUATORS`. This avoids a long if/elif chain and keeps cyclomatic complexity under the C901 limit.
+
+### Bootstrap resamples tasks, not trials
+Per the spec: "bootstrap (10k resamples over tasks, not trials)." Each task has one aggregated score (mean across trials or majority vote). The bootstrap resamples *tasks* to get the CI.
+
+### McNemar uses scipy.stats.binomtest for small samples
+For n_discordant < 25, exact binomial via `binomtest` (scipy removed the old `binom_test`). For larger samples, uses chi-squared approximation.
+
+### Category derived from task_id prefix
+Tasks are expected to use `category/task_name` as their task_id (e.g., `coding/t1`). The report data layer splits on `/` to determine category. This avoids needing a separate category lookup table.
+
+### Report card never includes response text or prompts
+Reports only render aggregate statistics, CIs, and anonymized failure patterns (category + flags). Test `test_no_task_text_leakage` asserts this invariant by planting sentinel strings and grepping the output.
+
+### Timeline report deferred to Phase 5
+Per the spec: Phase 5 includes "longitudinal report." The CLI stub remains with "not implemented (Phase 5)" message.
+
+### numpy and scipy added as dependencies
+Stats functions require numpy (bootstrap, array ops) and scipy (binomial test, chi-squared CDF). These are explicit in pyproject.toml. Type stubs (`scipy-stubs`, `types-PyYAML`) added to dev deps for mypy strict compliance.

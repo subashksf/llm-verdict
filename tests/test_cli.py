@@ -50,16 +50,18 @@ def test_judge_calibrate_no_db() -> None:
     assert "No database found" in result.output
 
 
-def test_report_card_stub() -> None:
-    """verdict report card prints not implemented."""
+def test_report_card_no_db() -> None:
+    """verdict report card errors when no DB exists."""
     result = runner.invoke(app, ["report", "card", "some-run-id"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
+    assert "No database found" in result.output
 
 
-def test_report_compare_stub() -> None:
-    """verdict report compare prints not implemented."""
+def test_report_compare_no_db() -> None:
+    """verdict report compare errors when no DB exists."""
     result = runner.invoke(app, ["report", "compare", "run-a", "run-b"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
+    assert "No database found" in result.output
 
 
 def test_report_timeline_stub() -> None:

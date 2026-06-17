@@ -210,24 +210,66 @@ def judge_calibrate(
         typer.echo("WARNING: Kappa below 0.6 — judge may not be reliable")
 
 
-# --- report commands (stubs) ---
+# --- report commands ---
 
 
 @report_app.command("card")
-def report_card(run_id: str = typer.Argument(..., help="Run ID")) -> None:
+def report_card(
+    run_id: str = typer.Argument(..., help="Run ID"),
+    output: Path = typer.Option(Path("reports"), help="Output directory"),
+    html: bool = typer.Option(False, "--html", help="Also generate HTML"),
+) -> None:
     """Generate a single-model report card."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    from llm_verdict.reporting.data import compute_run_report
+    from llm_verdict.reporting.renderer import render_card_html, render_card_markdown
+    from llm_verdict.store.duck import init_db
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found.", err=True)
+        raise typer.Exit(code=1)
+
+    conn = init_db(db_path)
+    report = compute_run_report(conn, run_id)
+
+    output.mkdir(parents=True, exist_ok=True)
+    md_path = output / f"{run_id}_card.md"
+    md_path.write_text(render_card_markdown(report))
+    typer.echo(f"Report card: {md_path}")
+
+    if html:
+        html_path = output / f"{run_id}_card.html"
+        html_path.write_text(render_card_html(report))
+        typer.echo(f"HTML report: {html_path}")
 
 
 @report_app.command("compare")
 def report_compare(
     run_id_a: str = typer.Argument(..., help="First run ID"),
     run_id_b: str = typer.Argument(..., help="Second run ID"),
+    output: Path = typer.Option(Path("reports"), help="Output directory"),
 ) -> None:
     """Generate a head-to-head comparison report."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    from llm_verdict.reporting.data import compute_compare_report
+    from llm_verdict.reporting.renderer import render_compare_markdown
+    from llm_verdict.store.duck import init_db
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found.", err=True)
+        raise typer.Exit(code=1)
+
+    conn = init_db(db_path)
+    try:
+        report = compute_compare_report(conn, run_id_a, run_id_b)
+    except ValueError as e:
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(code=1)
+
+    output.mkdir(parents=True, exist_ok=True)
+    md_path = output / f"compare_{run_id_a[:8]}_{run_id_b[:8]}.md"
+    md_path.write_text(render_compare_markdown(report))
+    typer.echo(f"Comparison report: {md_path}")
 
 
 @report_app.command("timeline")
@@ -235,7 +277,7 @@ def report_timeline(
     model_family: str = typer.Option(..., "--model-family", help="Model family prefix"),
 ) -> None:
     """Generate a longitudinal timeline report."""
-    typer.echo("not implemented")
+    typer.echo("not implemented (Phase 5)")
     raise typer.Exit(code=0)
 
 

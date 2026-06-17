@@ -12,6 +12,8 @@ dependencies = [
     "jsonschema>=4.20",
     "anyio>=4.0",
     "python-ulid>=2.0",
+    "numpy>=1.26",
+    "scipy>=1.12",
 ]
 
 [project.scripts]
@@ -45,4 +47,6 @@ dev = [
     "pytest-asyncio>=0.23",
     "mypy>=1.0",
     "ruff>=0.4",
+    "types-PyYAML>=6.0",
+    "scipy-stubs>=1.4",
 ]

@@ -1,0 +1,11 @@
+category: code_review
+incumbent: claude-sonnet-4-6
+adopt_if:
+  - pass_rate_delta_pp: ">= 5"
+    ci_overlap: false
+  - OR:
+      pass_rate_within_ci: true
+      cost_per_success_reduction_pct: ">= 30"
+constraints:
+  p95_latency_ms: "<= 20000"
+  refusal_rate_pct: "<= 2"
