@@ -66,6 +66,28 @@ class CompareReport:
     overall_mcnemar: McNemarResult
 
 
+@dataclass
+class TimelineEntry:
+    """A single point in the longitudinal timeline."""
+
+    run_id: str
+    model_id: str
+    model_version: str | None
+    run_date: str
+    suite_hash: str
+    pass_rate: float
+    mean_score: float
+    total_cost: float
+
+
+@dataclass
+class TimelineReport:
+    """All data for a longitudinal timeline report."""
+
+    model_family: str
+    entries: list[TimelineEntry] = field(default_factory=list)
+
+
 def compute_category_stats(
     conn: Any, run_id: str, category: str, task_ids: list[str]
 ) -> CategoryStats:
@@ -186,6 +208,45 @@ def compute_compare_report(conn: Any, run_id_a: str, run_id_b: str) -> CompareRe
         overall_delta=paired_bootstrap_delta(all_scores_a, all_scores_b),
         overall_mcnemar=mcnemar_test(all_passes_a, all_passes_b),
     )
+
+
+def compute_timeline_report(conn: Any, model_family: str) -> TimelineReport:
+    """Build longitudinal timeline for a model family prefix."""
+    rows = conn.execute(
+        "SELECT run_id, model_id, model_version, created_at, suite_hash "
+        "FROM runs WHERE model_id LIKE ? "
+        "ORDER BY created_at",
+        [f"{model_family}%"],
+    ).fetchall()
+
+    entries: list[TimelineEntry] = []
+    for run_id, model_id, version, created_at, suite_hash in rows:
+        stats_row = conn.execute(
+            "SELECT AVG(CASE WHEN s.passed THEN 1.0 ELSE 0.0 END), "
+            "AVG(s.score), COALESCE(SUM(t.cost_usd), 0) "
+            "FROM scores s "
+            "JOIN trials t ON s.run_id = t.run_id "
+            "AND s.task_id = t.task_id "
+            "AND s.trial_index = t.trial_index "
+            "WHERE s.run_id = ?",
+            [run_id],
+        ).fetchone()
+        if stats_row is None or stats_row[0] is None:
+            continue
+        entries.append(
+            TimelineEntry(
+                run_id=run_id,
+                model_id=model_id,
+                model_version=version,
+                run_date=str(created_at),
+                suite_hash=suite_hash,
+                pass_rate=float(stats_row[0]),
+                mean_score=float(stats_row[1]),
+                total_cost=float(stats_row[2]),
+            )
+        )
+
+    return TimelineReport(model_family=model_family, entries=entries)
 
 
 # --- internal query helpers ---

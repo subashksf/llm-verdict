@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import math
 
-from llm_verdict.reporting.data import CategoryStats, CompareReport, RunReport
+from llm_verdict.reporting.data import (
+    CategoryStats,
+    CompareReport,
+    RunReport,
+    TimelineReport,
+)
 
 
 def render_card_markdown(report: RunReport) -> str:
@@ -128,6 +133,24 @@ def _category_table(categories: list[CategoryStats]) -> str:
             f"{c.p50_latency_ms:.0f} | {c.p95_latency_ms:.0f} | "
             f"{c.refusal_rate:.1f}% | {c.consistency:.0%} |"
         )
+    return "\n".join(lines)
+
+
+def render_timeline_markdown(report: TimelineReport) -> str:
+    """Render a longitudinal timeline as Markdown."""
+    lines: list[str] = []
+    lines.append(f"# Timeline: {report.model_family}*")
+    lines.append("")
+    lines.append("| Date | Model | Version | Suite | Pass Rate | Score | Cost |")
+    lines.append("|------|-------|---------|-------|-----------|-------|------|")
+    for e in report.entries:
+        lines.append(
+            f"| {e.run_date[:10]} | {e.model_id} | "
+            f"{e.model_version or 'N/A'} | {e.suite_hash[:8]} | "
+            f"{e.pass_rate:.1%} | {e.mean_score:.3f} | "
+            f"${e.total_cost:.4f} |"
+        )
+    lines.append("")
     return "\n".join(lines)
 
 

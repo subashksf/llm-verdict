@@ -101,3 +101,20 @@ Per the spec: Phase 5 includes "longitudinal report." The CLI stub remains with 
 
 ### numpy and scipy added as dependencies
 Stats functions require numpy (bootstrap, array ops) and scipy (binomial test, chi-squared CDF). These are explicit in pyproject.toml. Type stubs (`scipy-stubs`, `types-PyYAML`) added to dev deps for mypy strict compliance.
+
+## Phase 5 Decisions
+
+### Timeline report queries DuckDB directly
+`compute_timeline_report` uses a model family prefix match (`LIKE '{family}%'`) and joins scores with trials to compute per-run aggregates inline. This avoids materializing full RunReports for every historical run.
+
+### `add-from-failure` creates a stub YAML that requires manual prompt fill-in
+The failed trial's response text is never stored in the generated task YAML (privacy invariant). Instead, the prompt field contains a `[FILL IN]` placeholder. The user fills this from their suite source. Metadata records the original run_id and task_id for traceability.
+
+### `db query` outputs TSV to stdout
+Raw query results are printed as tab-separated values with a header row. This is simple, pipeable, and avoids adding a table formatting dependency.
+
+### README quickstart uses `uv run verdict` convention
+All CLI examples use `uv run verdict` (not `python -m` or bare `verdict`) since the project uses uv for dependency management and the entrypoint is defined in pyproject.toml.
+
+### No deviations from spec
+Phase 5 acceptance criteria: "a new model can be added with a single YAML file and produce a full report card with one `run` + one `report` command." The README quickstart demonstrates exactly this flow.

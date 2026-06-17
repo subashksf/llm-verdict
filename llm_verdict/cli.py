@@ -275,30 +275,81 @@ def report_compare(
 @report_app.command("timeline")
 def report_timeline(
     model_family: str = typer.Option(..., "--model-family", help="Model family prefix"),
+    output: Path = typer.Option(Path("reports"), help="Output directory"),
 ) -> None:
     """Generate a longitudinal timeline report."""
-    typer.echo("not implemented (Phase 5)")
-    raise typer.Exit(code=0)
+    from llm_verdict.reporting.data import compute_timeline_report
+    from llm_verdict.reporting.renderer import render_timeline_markdown
+    from llm_verdict.store.duck import init_db
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found.", err=True)
+        raise typer.Exit(code=1)
+
+    conn = init_db(db_path)
+    report = compute_timeline_report(conn, model_family)
+    if not report.entries:
+        typer.echo(f"No runs found for model family: {model_family}")
+        raise typer.Exit(code=0)
+
+    output.mkdir(parents=True, exist_ok=True)
+    md_path = output / f"timeline_{model_family}.md"
+    md_path.write_text(render_timeline_markdown(report))
+    typer.echo(f"Timeline report: {md_path}")
 
 
-# --- db commands (stubs) ---
+# --- db commands ---
 
 
 @db_app.command("query")
 def db_query(sql: str = typer.Argument(..., help="SQL query to execute")) -> None:
     """Run a raw SQL query against the DuckDB store."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    from llm_verdict.store.duck import init_db
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found.", err=True)
+        raise typer.Exit(code=1)
+
+    conn = init_db(db_path)
+    try:
+        result = conn.execute(sql).fetchall()
+    except Exception as e:
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(code=1)
+
+    desc = conn.description()
+    if desc:
+        headers = [col[0] for col in desc]
+        typer.echo("\t".join(headers))
+    for row in result:
+        typer.echo("\t".join(str(v) for v in row))
 
 
-# --- task commands (stubs) ---
+# --- task commands ---
 
 
 @task_app.command("add-from-failure")
 def task_add_from_failure(
     run_id: str = typer.Argument(..., help="Source run ID"),
     task_id: str = typer.Argument(..., help="Task ID to promote"),
+    suite: Path = typer.Option(..., help="Target suite directory"),
 ) -> None:
-    """Promote a failure into the task suite."""
-    typer.echo("not implemented")
-    raise typer.Exit(code=0)
+    """Promote a failure into the task suite as a new regression task."""
+    from llm_verdict.store.duck import init_db
+    from llm_verdict.tasks.add_from_failure import promote_failure
+
+    db_path = Path("verdict.duckdb")
+    if not db_path.exists():
+        typer.echo("ERROR: No database found.", err=True)
+        raise typer.Exit(code=1)
+
+    conn = init_db(db_path)
+    try:
+        output_path = promote_failure(conn, run_id, task_id, suite)
+    except ValueError as e:
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Task promoted: {output_path}")

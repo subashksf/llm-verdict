@@ -64,19 +64,21 @@ def test_report_compare_no_db() -> None:
     assert "No database found" in result.output
 
 
-def test_report_timeline_stub() -> None:
-    """verdict report timeline prints not implemented."""
+def test_report_timeline_no_db() -> None:
+    """verdict report timeline errors when no DB exists."""
     result = runner.invoke(app, ["report", "timeline", "--model-family", "claude"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
+    assert "No database found" in result.output
 
 
-def test_db_query_stub() -> None:
-    """verdict db query prints not implemented."""
+def test_db_query_no_db() -> None:
+    """verdict db query errors when no DB exists."""
     result = runner.invoke(app, ["db", "query", "SELECT 1"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 1
+    assert "No database found" in result.output
 
 
-def test_task_add_from_failure_stub() -> None:
-    """verdict task add-from-failure prints not implemented."""
+def test_task_add_from_failure_missing_suite() -> None:
+    """verdict task add-from-failure errors when --suite is missing."""
     result = runner.invoke(app, ["task", "add-from-failure", "run-1", "task-1"])
-    assert "not implemented" in result.output
+    assert result.exit_code == 2
